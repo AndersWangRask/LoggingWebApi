@@ -18,21 +18,30 @@ namespace LoggingWebApi.Services
             _options = options;
         }
 
+        /// <summary>
+        /// Creates a new instance of a log entry saver based on the configured saver type.
+        /// </summary>
+        /// <returns>
+        /// The configured log entry saver type
+        /// </returns>
+        /// <exception cref="InvalidOperationException">
+        /// When an invalid saver type is specified in the configuration.
+        /// </exception>
+        /// <remarks>
+        /// It is possible to add as many saver types as needed.
+        /// </remarks>
         public ILogEntrySaver CreateSaver()
         {
-            // Placeholder Logic
-            return new FileSystemLogEntrySaver(_options);
+            // --> The configured log entry saver type
+            return
+                _options.SaverType.ToLower() switch
+                {
+                    "filesystem" => new FileSystemLogEntrySaver(_options),
+                    "azureblob" => new AzureBlobLogEntrySaver(_options),
+                    _ => throw new InvalidOperationException("Invalid saver type specified in configuration")
+                };
 
-            //TODO: Implement logic to choose the appropriate saver based on configuration, AWR, 2024-09-12
-
-            // Example logic to choose the appropriate saver based on configuration
-            //return _options.SaverType switch
-            //{
-            //    "FileSystem" => new FileSystemLogEntrySaver(_options),
-            //    "AzureBlob" => new AzureBlobLogEntrySaver(_options),
-            //    "Database" => new DatabaseLogEntrySaver(_options),
-            //    _ => throw new InvalidOperationException("Invalid saver type specified in configuration")
-            //};
+            //It is possible to add as many saver types as needed
         }
     }
 }
