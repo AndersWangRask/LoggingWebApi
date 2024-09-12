@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
 using LoggingWebApi.Models;
 using LoggingWebApi.Configuration;
+using System.Text.RegularExpressions;
 
 namespace LoggingWebApi.Services
 {
@@ -21,6 +22,12 @@ namespace LoggingWebApi.Services
         private readonly LoggingOptions _options;
 
         /// <summary>
+        /// A dictionary of body readers for different content types.
+        /// </summary>
+        private Dictionary<string, Func<HttpContext, LogEntry, Task>> _bodyReaders =
+            new Dictionary<string, Func<HttpContext, LogEntry, Task>>();
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="LoggingService"/> class
         /// with the specified logging options.
         /// </summary>
@@ -28,6 +35,12 @@ namespace LoggingWebApi.Services
         public LoggingService(IOptions<LoggingOptions> options)
         {
             _options = options.Value;
+
+            // Initialize the body readers for different content types
+            _bodyReaders.Add(@"^application/json$", BodyToTextAsync);
+            _bodyReaders.Add(@"^application/xml$", BodyToTextAsync);
+            _bodyReaders.Add(@"^text/.*", BodyToTextAsync);
+            _bodyReaders.Add(@"^.*$", BodyToBinaryAsync);
         }
 
         /// <summary>
@@ -75,6 +88,35 @@ namespace LoggingWebApi.Services
         }
 
         /// <summary>
+        /// Gets the appropriate body reader based on the content type.
+        /// </summary>
+        /// <param name="contentType">
+        /// The content type of the request.
+        /// Based on this value, the appropriate body reader will be returned.
+        /// </param>
+        /// <returns>
+        /// The body reader function that can be used to read the request body.
+        /// </returns>
+        public Func<HttpContext, LogEntry, Task> GetBodyReader(string? contentType)
+        {
+            // Find the appropriate body reader based on the content type
+            // If no reader is found, default to reading the body as binary data
+            if (string.IsNullOrWhiteSpace(contentType))
+            {
+                //--> Return the default body reader for binary data
+                return BodyToBinaryAsync;
+            }
+
+            Func<HttpContext, LogEntry, Task> bodyReader =
+                _bodyReaders
+                    .FirstOrDefault(kvp => Regex.IsMatch(contentType, kvp.Key, RegexOptions.IgnoreCase))
+                    .Value ?? BodyToBinaryAsync;
+
+            //--> Return the appropriate body reader based on the content type
+            return bodyReader;
+        }
+
+        /// <summary>
         /// Creates a <see cref="LogEntry"/> based on the current HTTP context.
         /// </summary>
         /// <param name="context">The HTTP context containing the request data.</param>
@@ -104,18 +146,14 @@ namespace LoggingWebApi.Services
                 // Enable buffering to allow reading the request body multiple times
                 context.Request.EnableBuffering();
 
-                // Validate if the content type is text, JSON, or XML
-                if (context.Request.ContentType?.StartsWith("text/") == true ||
-                    context.Request.ContentType == "application/json" ||
-                    context.Request.ContentType == "application/xml")
-                {
-                    await BodyToTextAsync(context, logEntry);
-                }
-                else
-                {
-                    // Otherwise, treat the body as binary data
-                    await BodyToBinaryAsync(context, logEntry);
-                }
+                // Get the content type of the request
+                string? contentType = context.Request.ContentType;
+
+                // Get the appropriate body reader based on the content type
+                Func<HttpContext, LogEntry, Task> bodyReader = GetBodyReader(contentType);
+
+                // Read the request body based on the content type
+                await bodyReader(context, logEntry);
             }
 
             //--> Return the constructed log entry
