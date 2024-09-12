@@ -11,4 +11,3 @@ namespace LoggingWebApi.Configuration
         public int ResponseStatusCode { get; set; } = 200;
     }
 }
-
