@@ -53,7 +53,7 @@ namespace LoggingWebApi.Controllers
             Models.LogEntry logEntry = await _loggingService.CreateLogEntryAsync(HttpContext);
 
             // Save the log entry to the configured storage (e.g., file system)
-            await _loggingService.SaveLogEntryAsync(logEntry);
+            await _loggingService.LogEntrySaver.SaveLogEntry(logEntry);
 
             //--> Return the configured status code as the response
             return StatusCode(_options.ResponseStatusCode);

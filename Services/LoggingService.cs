@@ -7,6 +7,7 @@ using Microsoft.Extensions.Options;
 using LoggingWebApi.Models;
 using LoggingWebApi.Configuration;
 using System.Text.RegularExpressions;
+using LoggingWebApi.Interfaces;
 
 namespace LoggingWebApi.Services
 {
@@ -161,48 +162,21 @@ namespace LoggingWebApi.Services
         }
 
         /// <summary>
-        /// Saves a <see cref="LogEntry"/> to a file and any associated binary attachments.
+        /// Gets the <see cref="ILogEntrySaver"/> instance for saving log entries.
         /// </summary>
-        /// <param name="logEntry">The log entry to save.</param>
-        /// <returns>A task that represents the asynchronous save operation.</returns>
-        public async Task SaveLogEntryAsync(LogEntry logEntry)
-        {
-            // Check if the log entry has a binary attachment
-            if (logEntry.HasBinaryAttachment)
+        public ILogEntrySaver LogEntrySaver 
+        { 
+            get
             {
-                // Ensure a valid filename is set for the binary attachment
-                if (string.IsNullOrWhiteSpace(logEntry.BinaryAttachmentFilename))
+                if (_logEntrySaver == null)
                 {
-                    logEntry.BinaryAttachmentFilename = logEntry.GetBinaryAttachmentFilename();
+                    _logEntrySaver = new LogEntrySaver(_options);
                 }
 
-                // Save the binary attachment to a file
-                await SaveBinaryAttachmentAsync(logEntry.BinaryAttachment!, logEntry.BinaryAttachmentFilename);
-            }
-
-            // Construct the file path for saving the log entry
-            string logFilePath = Path.Combine(_options.LogFileDirectory, logEntry.GetLogFilename());
-
-            // Save the log entry as a text file
-            await File.WriteAllTextAsync(logFilePath, logEntry.ToString());
-        }
-
-        /// <summary>
-        /// Saves a binary attachment to a file.
-        /// </summary>
-        /// <param name="bodyStream">The stream containing the binary content.</param>
-        /// <param name="filename">The name of the file to save the binary content to.</param>
-        /// <returns>A task that represents the asynchronous save operation.</returns>
-        private async Task SaveBinaryAttachmentAsync(Stream bodyStream, string filename)
-        {
-            // Construct the full file path for the binary attachment
-            string filePath = Path.Combine(_options.LogFileDirectory, filename);
-
-            // Save the binary data to the specified file
-            using (var fileStream = File.Create(filePath))
-            {
-                await bodyStream.CopyToAsync(fileStream);
+                //--> Return the log entry saver
+                return _logEntrySaver;
             }
         }
+        private ILogEntrySaver _logEntrySaver;
     }
 }
