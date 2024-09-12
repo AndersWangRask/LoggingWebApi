@@ -10,7 +10,7 @@ namespace LoggingWebApi.Services
     /// <summary>
     /// Provides functionality to save log entries, including any associated binary attachments, to a file system.
     /// </summary>
-    public class LogEntrySaver : ILogEntrySaver
+    public class FileSystemLogEntrySaver : ILogEntrySaver
     {
         /// <summary>
         /// Configuration options for logging, such as the log file directory.
@@ -18,19 +18,19 @@ namespace LoggingWebApi.Services
         private readonly LoggingOptions _options;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="LogEntrySaver"/> class with the specified logging options.
+        /// Initializes a new instance of the <see cref="FileSystemLogEntrySaver"/> class with the specified logging options.
         /// </summary>
         /// <param name="options">The logging options configuration provided via dependency injection.</param>
-        public LogEntrySaver(IOptions<LoggingOptions> options)
+        public FileSystemLogEntrySaver(IOptions<LoggingOptions> options)
         {
             _options = options.Value;
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="LogEntrySaver"/> class with the specified logging options.
+        /// Initializes a new instance of the <see cref="FileSystemLogEntrySaver"/> class with the specified logging options.
         /// </summary>
         /// <param name="options">The logging options configuration.</param>
-        public LogEntrySaver(LoggingOptions options)
+        public FileSystemLogEntrySaver(LoggingOptions options)
         {
             _options = options;
         }

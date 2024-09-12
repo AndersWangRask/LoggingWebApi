@@ -1,5 +1,6 @@
 using LoggingWebApi.Services;
 using LoggingWebApi.Configuration;
+using LoggingWebApi.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -14,6 +15,7 @@ builder.Services.Configure<LoggingOptions>(
 
 // Register LoggingService
 builder.Services.AddScoped<LoggingService>();
+builder.Services.AddScoped<ILogEntrySaverFactory, LogEntrySaverFactory>();
 
 var app = builder.Build();
 

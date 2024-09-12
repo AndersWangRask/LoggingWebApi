@@ -28,14 +28,18 @@ namespace LoggingWebApi.Services
         private Dictionary<string, Func<HttpContext, LogEntry, Task>> _bodyReaders =
             new Dictionary<string, Func<HttpContext, LogEntry, Task>>();
 
+        private readonly ILogEntrySaverFactory _logEntrySaverFactory;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="LoggingService"/> class
         /// with the specified logging options.
         /// </summary>
         /// <param name="options">The logging options configuration.</param>
-        public LoggingService(IOptions<LoggingOptions> options)
+        public LoggingService(IOptions<LoggingOptions> options, ILogEntrySaverFactory logEntrySaverFactory)
         {
             _options = options.Value;
+
+            _logEntrySaverFactory = logEntrySaverFactory;
 
             // Initialize the body readers for different content types
             _bodyReaders.Add(@"^application/json$", BodyToTextAsync);
@@ -164,19 +168,24 @@ namespace LoggingWebApi.Services
         /// <summary>
         /// Gets the <see cref="ILogEntrySaver"/> instance for saving log entries.
         /// </summary>
-        public ILogEntrySaver LogEntrySaver 
-        { 
+        /// <remarks>
+        /// LogEntrySavers are created on demand and reused for subsequent requests.
+        /// LogEntrySavers can be created with different configurations, such as storage location.
+        /// The LogEntrySaver type is configured in the application's settings.
+        /// </remarks>
+        public ILogEntrySaver LogEntrySaver
+        {
             get
             {
                 if (_logEntrySaver == null)
                 {
-                    _logEntrySaver = new LogEntrySaver(_options);
+                    _logEntrySaver = _logEntrySaverFactory.CreateSaver();
                 }
 
                 //--> Return the log entry saver
                 return _logEntrySaver;
             }
         }
-        private ILogEntrySaver _logEntrySaver;
+        private ILogEntrySaver? _logEntrySaver = null;
     }
 }
